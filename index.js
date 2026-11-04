@@ -2,77 +2,119 @@
 //npm init -y
 //npm install express mysql2
 
-const express = require("express")
-const app = express()
-const port = 3000
+const express = require("express");
+const cors = require("cors");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const { pool } = require("./db");
 
-app.use(express.json())
+const app = express();
+const port = 3000;
 
-const db = require("./db")
+const JWT_SECRET = process.env.JWT_SECRET || "chave_secreta_super_segura";
 
-// GET - listar todos os produtos
+app.use(cors());
+app.use(express.json());
+
+// --- ROTAS DE PRODUTOS ---
+
+// GET - Listar produtos e filtrar por preço (?min=X&max=Y)
 app.get("/produtos", async (req, res) => {
     try {
-        const [resultado] = await db.pool.query(
-            "SELECT * FROM produtos"
-        )
-
-        res.status(200).json(resultado)
-
-    } catch (error) {
-        res.status(500).json({ erro: error.message })
-    }
-})
-
-// GET - buscar produto pelo ID
-app.get("/produtos/:id", async (req, res) => {
-    try {
-        const id = req.params.id
-
-        const [resultado] = await db.pool.query(
-            "SELECT * FROM produtos WHERE id = ?",
-            [id]
-        )
-
-        if (resultado.length === 0) {
-            return res.status(404).json({
-                mensagem: "Produto não encontrado"
-            })
-        }
-
-        res.status(200).json(resultado[0])
-
-    } catch (error) {
-        res.status(500).json({ erro: error.message })
-    }
-})
-
-// Iniciar a API
-app.listen(port, () => {
-    console.log("API de perfumes rodando na porta " + port)
-})
-
-
- // GET - listar e filtrar produtos por preço
- app.get("/produtos", async (req, res) => {
-    try {
-        const min = req.query.min
-        const max = req.query.max
-
-        let sql = "SELECT * FROM produtos"
-        let valores = []
+        const { min, max } = req.query;
+        let sql = "SELECT * FROM produtos";
+        let valores = [];
 
         if (min !== undefined && max !== undefined) {
-            sql += " WHERE preco >= ? AND preco <= ?"
-            valores = [min, max]
+            sql += " WHERE preco >= ? AND preco <= ?";
+            valores = [Number(min), Number(max)];
         }
 
-        const [resultado] = await db.pool.query(sql, valores)
-
-        res.status(200).json(resultado)
-
+        const [resultado] = await pool.query(sql, valores);
+        res.status(200).json(resultado);
     } catch (error) {
-        res.status(500).json({ erro: error.message })
+        res.status(500).json({ erro: error.message });
     }
-})
+});
 
+// GET - Buscar produto por ID
+app.get("/produtos/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [resultado] = await pool.query("SELECT * FROM produtos WHERE id = ?", [id]);
+
+        if (resultado.length === 0) {
+            return res.status(404).json({ mensagem: "Produto não encontrado" });
+        }
+
+        res.status(200).json(resultado[0]);
+    } catch (error) {
+        res.status(500).json({ erro: error.message });
+    }
+});
+
+// --- ROTAS DE AUTENTICAÇÃO E USUÁRIOS ---
+
+// POST - Cadastrar usuário
+app.post("/cadastro", async (req, res) => {
+    try {
+        const { nome, email, senha } = req.body;
+
+        if (!nome || !email || !senha) {
+            return res.status(400).json({ mensagem: "Todos os campos são obrigatórios." });
+        }
+
+        const [existente] = await pool.query("SELECT * FROM usuarios WHERE email = ?", [email]);
+        if (existente.length > 0) {
+            return res.status(400).json({ mensagem: "E-mail já cadastrado." });
+        }
+
+        const senhaHash = await bcrypt.hash(senha, 10);
+        await pool.query("INSERT INTO usuarios (nome, email, senha) VALUES (?, ?, ?)", [
+            nome,
+            email,
+            senhaHash
+        ]);
+
+        res.status(201).json({ mensagem: "Usuário cadastrado com sucesso!" });
+    } catch (error) {
+        res.status(500).json({ erro: error.message });
+    }
+});
+
+// POST - Login do usuário
+app.post("/login", async (req, res) => {
+    try {
+        const { email, senha } = req.body;
+
+        const [usuarios] = await pool.query("SELECT * FROM usuarios WHERE email = ?", [email]);
+        if (usuarios.length === 0) {
+            return res.status(401).json({ mensagem: "E-mail ou senha incorretos." });
+        }
+
+        const usuario = usuarios[0];
+        const senhaValida = await bcrypt.compare(senha, usuario.senha);
+
+        if (!senhaValida) {
+            return res.status(401).json({ mensagem: "E-mail ou senha incorretos." });
+        }
+
+        const token = jwt.sign(
+            { id: usuario.id, email: usuario.email },
+            JWT_SECRET,
+            { expiresIn: "8h" }
+        );
+
+        res.status(200).json({
+            mensagem: "Login realizado com sucesso!",
+            token,
+            nome: usuario.nome
+        });
+    } catch (error) {
+        res.status(500).json({ erro: error.message });
+    }
+});
+
+app.listen(port, () => {
+    console.log(`API rodando na porta ${port}`);
+});
