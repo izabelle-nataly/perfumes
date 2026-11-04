@@ -1,6 +1,7 @@
 
 //npm init -y
 //npm install express mysql2
+//node criarTabela.js
 
 const express = require("express");
 const cors = require("cors");
