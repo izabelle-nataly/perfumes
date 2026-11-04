@@ -1,3 +1,5 @@
+//node criarTabela.js
+
 const { pool } = require("./db");
 
 async function criarTabela() {
