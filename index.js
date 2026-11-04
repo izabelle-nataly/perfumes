@@ -16,8 +16,6 @@ const JWT_SECRET = process.env.JWT_SECRET || "chave_secreta_super_segura";
 app.use(cors());
 app.use(express.json());
 
-// --- ROTAS DE PRODUTOS ---
-
 // GET - Listar produtos e filtrar por preço (?min=X&max=Y)
 app.get("/produtos", async (req, res) => {
     try {
@@ -52,8 +50,6 @@ app.get("/produtos/:id", async (req, res) => {
         res.status(500).json({ erro: error.message });
     }
 });
-
-// --- ROTAS DE AUTENTICAÇÃO E USUÁRIOS ---
 
 // POST - Cadastrar usuário
 app.post("/cadastro", async (req, res) => {
