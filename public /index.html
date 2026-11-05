@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Perfumes</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Catálogo de Perfumes</h1>
+    </header>
+
+    <main class="container">
+        <!-- Seção de Filtros -->
+        <aside class="filtros">
+            <h2>Filtros</h2>
+            <form id="formFiltros">
+                <div class="campo">
+                    <label for="busca">Buscar por nome ou aroma:</label>
+                    <input type="text" id="busca" placeholder="Ex: Baunilha, Flor...">
+                </div>
+
+                <div class="campo">
+                    <label for="marca">Marca:</label>
+                    <input type="text" id="marca" placeholder="Ex: Natura, Dior...">
+                </div>
+
+                <div class="campo-duplo">
+                    <div>
+                        <label for="min">Preço Mín (R$):</label>
+                        <input type="number" id="min" placeholder="0">
+                    </div>
+                    <div>
+                        <label for="max">Preço Máx (R$):</label>
+                        <input type="number" id="max" placeholder="500">
+                    </div>
+                </div>
+
+                <button type="submit">Aplicar Filtros</button>
+                <button type="button" id="btnLimpar">Limpar Filtros</button>
+            </form>
+        </aside>
+
+        <!-- Seção de Exibição dos Produtos -->
+        <section class="conteudo">
+            <div id="gridProdutos" class="grid-produtos"></div>
+
+            <!-- Controles de Paginação -->
+            <div class="paginacao" id="paginacao"></div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
