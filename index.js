@@ -7,6 +7,7 @@ const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const path = require("path");
 const { pool } = require("./db");
 
 const app = express();
@@ -17,20 +18,76 @@ const JWT_SECRET = process.env.JWT_SECRET || "chave_secreta_super_segura";
 app.use(cors());
 app.use(express.json());
 
-// GET - Listar produtos e filtrar por preço (?min=X&max=Y)
+// Servir arquivos estáticos do front-end
+app.use(express.static(path.join(__dirname, "public")));
+
+// GET - Listar produtos com Filtros e Paginação
 app.get("/produtos", async (req, res) => {
     try {
-        const { min, max } = req.query;
-        let sql = "SELECT * FROM produtos";
-        let valores = [];
+        const { min, max, marca, busca, pagina = 1, limite = 6 } = req.query;
 
-        if (min !== undefined && max !== undefined) {
-            sql += " WHERE preco >= ? AND preco <= ?";
-            valores = [Number(min), Number(max)];
+        let sql = "SELECT * FROM produtos WHERE 1=1";
+        let countSql = "SELECT COUNT(*) as total FROM produtos WHERE 1=1";
+        let valores = [];
+        let countValores = [];
+
+        // Filtro de Preço Mínimo
+        if (min !== undefined && min !== "") {
+            sql += " AND preco >= ?";
+            countSql += " AND preco >= ?";
+            valores.push(Number(min));
+            countValores.push(Number(min));
         }
 
+        // Filtro de Preço Máximo
+        if (max !== undefined && max !== "") {
+            sql += " AND preco <= ?";
+            countSql += " AND preco <= ?";
+            valores.push(Number(max));
+            countValores.push(Number(max));
+        }
+
+        // Filtro por Marca/Categoria
+        if (marca && marca !== "") {
+            sql += " AND marca = ?";
+            countSql += " AND marca = ?";
+            valores.push(marca);
+            countValores.push(marca);
+        }
+
+        // Filtro por Busca (Nome ou Aroma)
+        if (busca && busca !== "") {
+            sql += " AND (nome LIKE ? OR aroma LIKE ?)";
+            countSql += " AND (nome LIKE ? OR aroma LIKE ?)";
+            const termoBusca = `%${busca}%`;
+            valores.push(termoBusca, termoBusca);
+            countValores.push(termoBusca, termoBusca);
+        }
+
+        // Paginação
+        const pageNum = Math.max(1, parseInt(pagina));
+        const limitNum = Math.max(1, parseInt(limite));
+        const offset = (pageNum - 1) * limitNum;
+
+        sql += " LIMIT ? OFFSET ?";
+        valores.push(limitNum, offset);
+
+        // Executar consultas
         const [resultado] = await pool.query(sql, valores);
-        res.status(200).json(resultado);
+        const [totalResultado] = await pool.query(countSql, countValores);
+
+        const totalItens = totalResultado[0].total;
+        const totalPaginas = Math.ceil(totalItens / limitNum);
+
+        res.status(200).json({
+            produtos: resultado,
+            paginacao: {
+                totalItens,
+                totalPaginas,
+                paginaAtual: pageNum,
+                limite: limitNum
+            }
+        });
     } catch (error) {
         res.status(500).json({ erro: error.message });
     }
