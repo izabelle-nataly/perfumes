@@ -1,8 +1,12 @@
-
+//mv package.json package.json.backup
 //npm init -y
+//npm install express mysql2 cors jsonwebtoken
+//node index.js
 //npm install express mysql2
+//instalar database e executar criartabela
 //node criarTabela.js
 //http://localhost:3000
+
 
 const express = require("express");
 const cors = require("cors");
