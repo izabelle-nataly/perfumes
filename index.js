@@ -1,6 +1,7 @@
 //mv package.json package.json.backup
 //npm init -y
 //npm install express mysql2 cors jsonwebtoken
+//npm 
 //node index.js
 //npm install express mysql2
 //instalar database e executar criartabela
@@ -177,3 +178,4 @@ app.post("/login", async (req, res) => {
 app.listen(port, () => {
     console.log(`API rodando na porta ${port}`);
 });
+
