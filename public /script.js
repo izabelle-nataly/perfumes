@@ -1,5 +1,6 @@
 let paginaAtual = 1;
 const limite = 6;
+const link_API = "http://localhost:3000"
 
 document.addEventListener("DOMContentLoaded", () => {
     carregarProdutos();
@@ -34,7 +35,7 @@ async function carregarProdutos() {
     if (busca) params.append("busca", busca);
 
     try {
-        const resposta = await fetch(`/produtos?${params.toString()}`);
+        const resposta = await fetch(`${link_API}/produtos?${params.toString()}`);
         const dados = await resposta.json();
 
         renderizarProdutos(dados.produtos);
